@@ -1,6 +1,7 @@
 import requests
 import json
 import qdrant_client
+import injest
 from transformers import pipeline
 from llama_index.core.node_parser import TokenTextSplitter
 from llama_index.core.node_parser import SentenceSplitter
@@ -13,45 +14,10 @@ from llama_index.core import VectorStoreIndex, SimpleDirectoryReader
 from llama_index.vector_stores.qdrant import QdrantVectorStore
 
 client, index = None, None
-collection_name="AllIncKB"
 
 def init():
-    client = qdrant_client.QdrantClient(
-        host="localhost",
-        port=6333
-    )
-
-    lc_embed_model = HuggingFaceEmbeddings(model_name="sentence-transformers/all-mpnet-base-v2")
-    embed_model = LangchainEmbedding(lc_embed_model)
-
-    collection_exists = client.collection_exists(collection_name=collection_name)
-    vector_store = QdrantVectorStore(client=client, collection_name=collection_name)
-    if collection_exists:
-        #Proceed to fetch
-        pass
-    else:
-        #Injest data
-        injest_data(vector_store, embed_model)
-
-    index = VectorStoreIndex.from_vector_store(vector_store=vector_store, embed_model=embed_model)
+    index = injest.injest_data(None)
     prompt_engine(index)
-
-
-def injest_data(vector_store, embed_model):
-    reader = SimpleDirectoryReader("./data/" , recursive=True)
-    documents = reader.load_data(show_progress=True)
-    pipeline = IngestionPipeline(
-        transformations=[
-            # MarkdownNodeParser(include_metadata=True),
-            # TokenTextSplitter(chunk_size=500, chunk_overlap=20),
-            SentenceSplitter(chunk_size=1024, chunk_overlap=20),
-            # SemanticSplitterNodeParser(buffer_size=1, breakpoint_percentile_threshold=95 , embed_model=Settings.embed_model),
-            embed_model,
-        ],
-        vector_store=vector_store,
-    )
-    nodes = pipeline.run(documents=documents , show_progress=True)
-    print("Number of chunks added to vector DB :",len(nodes))
 
 def prompt_engine(index):
     user_input = """Your question goes here"""
@@ -81,7 +47,8 @@ def prompt_engine(index):
     url = 'http://localhost:11434/api/generate'
     data = {
         "model": "llama3.2",
-        "prompt": prompt.format(user_input=user_input, relevant_document=relevant_docs)
+        "prompt": prompt.format(user_input=user_input, relevant_document=relevant_docs),
+        "stream": True 
     }
     headers = {'Content-Type': 'application/json'}
     response = requests.post(url, data=json.dumps(data), headers=headers, stream=True)
