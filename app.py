@@ -33,20 +33,21 @@ def prompt_engine(index):
 
 
     full_response = []
-    prompt = """System: You are a AI assistant who is well versed with answering questions from the provided context. Always answer the question, even if the context isn't helpful
-
+    prompt = """System: You are a AI assistant who is well versed with answering questions from the provided context. 
+    "In case the given context isn't helpful, proceed to mention clearly that you cannot help with the available information"
+    "Do not generate answers irrelevant to the context\n\n"
     "Context information is below.\n"
     "---------------------\n"
     "{relevant_document}\n"
     "---------------------\n"
-    "Given the context information and not prior knowledge, "
-    "answer the question from user"
+    "Given the context information and no prior knowledge"
+    "Answer the question from user"
     "User: {user_input}\n"
 
     Helpful Answer:"""
     url = 'http://localhost:11434/api/generate'
     data = {
-        "model": "llama3.2",
+        "model": "codellama",
         "prompt": prompt.format(user_input=user_input, relevant_document=relevant_docs),
         "stream": True 
     }
