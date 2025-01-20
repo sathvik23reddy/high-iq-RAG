@@ -1,5 +1,6 @@
 import qdrant_client
 import os
+import state
 from transformers import pipeline
 from llama_index.core.node_parser import TokenTextSplitter
 from llama_index.core.node_parser import SentenceSplitter
@@ -14,9 +15,10 @@ from llama_index.vector_stores.qdrant import QdrantVectorStore
 client, index = None, None
 collection_name="AllIncKB"
 
-def get_index(vector_store, embed_model):
+def set_index(vector_store, embed_model):
     index = VectorStoreIndex.from_vector_store(vector_store=vector_store, embed_model=embed_model)
-    return index
+    state.shared_state['index'] = index
+    state.shared_state['updated'] = True
 
 def injest_data(path):
     client = qdrant_client.QdrantClient(
@@ -30,8 +32,10 @@ def injest_data(path):
     vector_store = QdrantVectorStore(client=client, collection_name=collection_name)
 
     reader = None
+    
     if path is None:
-        return get_index(vector_store, embed_model)
+        set_index(vector_store, embed_model) 
+        return 
     elif os.path.isfile(path):
         reader = SimpleDirectoryReader(input_files=[path] , recursive=True)
     elif os.path.isdir(path):
@@ -53,7 +57,7 @@ def injest_data(path):
     nodes = pipeline.run(documents=documents , show_progress=True)
     print("Number of chunks added to vector DB :",len(nodes))
 
-    return get_index(vector_store, embed_model)
+    set_index(vector_store, embed_model)
 
 def main():
     path = input("Provide file path/dir to train RAG: ")
