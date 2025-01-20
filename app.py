@@ -23,9 +23,9 @@ def init():
 def prompt_engine():
     index = None 
     while True:
-        if index is None or not state.shared_state['updated']:
-            index = state.shared_state['index']
-            state.shared_state['index'] = False
+        if index is None or not state.getFlag():
+            index = state.getIndex()
+            state.setFlag(False)
 
         user_input = input("Enter your question: ")
         if user_input == "exit":

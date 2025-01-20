@@ -17,8 +17,8 @@ collection_name="AllIncKB"
 
 def set_index(vector_store, embed_model):
     index = VectorStoreIndex.from_vector_store(vector_store=vector_store, embed_model=embed_model)
-    state.shared_state['index'] = index
-    state.shared_state['updated'] = True
+    state.setIndex(index)
+    state.setFlag(True)
 
 def injest_data(path):
     client = qdrant_client.QdrantClient(
@@ -32,7 +32,7 @@ def injest_data(path):
     vector_store = QdrantVectorStore(client=client, collection_name=collection_name)
 
     reader = None
-    
+
     if path is None:
         set_index(vector_store, embed_model) 
         return 
