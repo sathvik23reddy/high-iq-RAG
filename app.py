@@ -13,6 +13,7 @@ from langchain_huggingface import HuggingFaceEmbeddings
 from llama_index.embeddings.langchain import LangchainEmbedding
 from llama_index.core import VectorStoreIndex, SimpleDirectoryReader
 from llama_index.vector_stores.qdrant import QdrantVectorStore
+from tqdm import tqdm
 
 client = None
 
@@ -21,7 +22,7 @@ def init():
     prompt_engine()
 
 def prompt_engine():
-    index = None 
+    index = None
     while True:
         if index is None or not state.getFlag():
             index = state.getIndex()
@@ -30,45 +31,58 @@ def prompt_engine():
         user_input = input("Enter your question: ")
         if user_input == "exit":
             break
-        retriever = index.as_retriever()
-        nodes = retriever.retrieve(user_input)
 
-        #Further enhance to use metadata and reference
+        retriever = index.as_retriever()
+        print("Retrieving nodes...")
+        nodes = list(tqdm(retriever.retrieve(user_input), desc="Nodes Retrieved"))
+
         relevant_docs = ""
-        for x in nodes:
+        print("Processing retrieved nodes...")
+        for x in tqdm(nodes, desc="Processing Nodes"):
+            relevant_docs += f"Reference: {x.node.metadata.get('file_name', 'N/A')}, page: {x.node.metadata.get('page_label', 'N/A')}\n"
             relevant_docs += x.node.text
             relevant_docs += "\n\n"
 
-
         full_response = []
-        prompt = """System: You are a AI assistant who is well versed with answering questions from the provided context. 
-        "In case the given context isn't helpful, proceed to mention clearly that you cannot help with the available information"
-        "Do not generate answers irrelevant to the context\n\n"
-        "Context information is below.\n"
-        "---------------------\n"
-        "{relevant_document}\n"
-        "---------------------\n"
-        "Given the context information and no prior knowledge"
-        "Answer the question from user"
-        "User: {user_input}\n"
+        prompt = """System: You are an AI assistant specialized in answering questions using the provided context. Use only the provided context to generate your response. If the context does not contain sufficient information to answer the question, clearly state, "I cannot provide an answer with the available information."
+
+        The provided context includes references formatted as:
+        Reference: [file_name], page: [page_label]
+        Text: [context content]
+
+        ---------------------
+        {relevant_document}
+        ---------------------
+
+        Task:
+        1. Answer the user’s question strictly based on the provided context. Do not use any prior knowledge or generate information outside the context.
+        2. Include the references from the context that were directly used to answer the question. Use the exact format given below:
+        - Reference: [file_name], page: [page_label]
+        3. Ensure the references are clearly mentioned at the end of your response.
+
+        User: {user_input}
 
         Helpful Answer:"""
+
         url = 'http://localhost:11434/api/generate'
         data = {
             "model": "codellama",
             "prompt": prompt.format(user_input=user_input, relevant_document=relevant_docs),
-            "stream": True 
         }
         headers = {'Content-Type': 'application/json'}
+
+        print("Sending request to API...")
         response = requests.post(url, data=json.dumps(data), headers=headers, stream=True)
+
         try:
-            for line in response.iter_lines():
-                # filter out keep-alive new lines
-                if line:
+            print("Receiving streamed response...")
+            for line in tqdm(response.iter_lines(), desc="Streaming Response"):
+                if line:  # filter out keep-alive new lines
                     decoded_line = json.loads(line.decode('utf-8'))
                     full_response.append(decoded_line['response'])
         finally:
             response.close()
+
         print(''.join(full_response))
 
 def cleanup():

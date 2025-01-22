@@ -1,6 +1,7 @@
 import qdrant_client
 import os
 import state
+from tqdm import tqdm
 from transformers import pipeline
 from llama_index.core.node_parser import TokenTextSplitter
 from llama_index.core.node_parser import SentenceSplitter
@@ -37,13 +38,15 @@ def injest_data(path):
         set_index(vector_store, embed_model) 
         return 
     elif os.path.isfile(path):
-        reader = SimpleDirectoryReader(input_files=[path] , recursive=True)
+        reader = SimpleDirectoryReader(input_files=[path], recursive=True)
     elif os.path.isdir(path):
-        reader = SimpleDirectoryReader(input_dir=path , recursive=True)
+        reader = SimpleDirectoryReader(input_dir=path, recursive=True)
     else:
-        reader = SimpleDirectoryReader(input_dir="./data/" , recursive=True)
+        reader = SimpleDirectoryReader(input_dir="./data/", recursive=True)
 
+    # Show progress when loading documents
     documents = reader.load_data(show_progress=True)
+
     pipeline = IngestionPipeline(
         transformations=[
             # MarkdownNodeParser(include_metadata=True),
@@ -54,8 +57,15 @@ def injest_data(path):
         ],
         vector_store=vector_store,
     )
-    nodes = pipeline.run(documents=documents , show_progress=True)
-    print("Number of chunks added to vector DB :",len(nodes))
+
+    # Wrap the documents in tqdm for progress tracking during the pipeline run
+    with tqdm(total=len(documents), desc="Processing documents") as pbar:
+        nodes = []
+        for document in documents:
+            nodes.extend(pipeline.run(documents=[document], show_progress=False))
+            pbar.update(1)
+
+    print("Number of chunks added to vector DB:", len(nodes))
 
     set_index(vector_store, embed_model)
 
