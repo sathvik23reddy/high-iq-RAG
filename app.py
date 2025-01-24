@@ -59,6 +59,7 @@ def prompt_engine():
         2. Include the references from the context that were directly used to answer the question. Use the exact format given below:
         - Reference: [file_name], page: [page_label]
         3. Ensure the references are clearly mentioned at the end of your response.
+        4. Append the following disclaimer to the response: 'This is an AI-generated response based on retrieved information; accuracy may vary'
 
         User: {user_input}
 

@@ -16,7 +16,7 @@ from llama_index.core import VectorStoreIndex, SimpleDirectoryReader
 from llama_index.vector_stores.qdrant import QdrantVectorStore
 
 client, index = None, None
-collection_name="AllIncKB1"
+collection_name="AllIncKB"
 
 def placeholder_populate_filemap():
     #Will be replaced by DB in future
