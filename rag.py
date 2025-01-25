@@ -66,6 +66,7 @@ def prompt_engine(user_input):
     data = {
         "model": "codellama",
         "prompt": prompt.format(user_input=user_input, relevant_document=relevant_docs),
+        "stream": True
     }
     headers = {'Content-Type': 'application/json'}
 
