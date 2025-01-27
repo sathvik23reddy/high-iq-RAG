@@ -80,6 +80,9 @@ def process_message_async(event):
     channel_id = event.get("channel")
     thread_ts = event.get("ts")
 
+    if not user_message.startswith("!bot"):
+        return
+
     rag_response = rag.init(user_message)
 
     # Send the generated response back to Slack

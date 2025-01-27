@@ -86,6 +86,7 @@ def prompt_engine(user_input):
         response.close()
 
     llm_response = ''.join(full_response)
+    print("Response from LLM has been sent")
     return llm_response
 
 def cleanup():
