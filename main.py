@@ -79,10 +79,6 @@ def process_message_async(event):
     user_message = event.get("text")
     channel_id = event.get("channel")
     thread_ts = event.get("ts")
-    print(f"DEBUG: MESSAGE {user_message}")
-    print(f"DEBUG: CID {channel_id}")
-    print(f"DEBUG: THREADTS {thread_ts}")
-    print(f"DEBUG: CLMSGID {event.get("client_msg_id")}")
 
     rag_response = rag.init(user_message)
 

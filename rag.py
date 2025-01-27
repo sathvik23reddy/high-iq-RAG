@@ -41,8 +41,11 @@ def prompt_engine(user_input):
         relevant_docs += "\n\n"
 
     full_response = []
-    prompt = """System: You are an AI assistant specialized in answering questions using the provided context. Use only the provided context to generate your response. If the context does not contain sufficient information to answer the question, clearly state, "I cannot provide an answer with the available information."
-
+    prompt = """System: You are an AI assistant specialized in answering questions using the provided context. 
+    Use only the provided context to generate your response. 
+    If the context does not contain sufficient information to answer the question, clearly state, "I cannot provide an answer with the available information."
+    If the user input asks to perform some form of log analysis, clearly state, "I cannot perform log analysis with my current capability."
+    
     The provided context includes references formatted as:
     Reference: [file_name], page: [page_label]
     Text: [context content]
@@ -83,7 +86,6 @@ def prompt_engine(user_input):
         response.close()
 
     llm_response = ''.join(full_response)
-    print(llm_response)
     return llm_response
 
 def cleanup():
