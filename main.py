@@ -5,6 +5,7 @@ import rag
 import threading
 import json
 import logging
+import re
 from dotenv import load_dotenv
 
 load_dotenv(dotenv_path='secrets.env')
@@ -54,7 +55,7 @@ def slack_events():
     # Process message events
     if "event" in data:
         event = data["event"]
-        if event.get("type") == "message" and not event.get("subtype"):
+        if event.get("type") == "message" and (not event.get("subtype") or event.get("subtype") == "file_share"):
 
             message_id = event.get("client_msg_id")
 
@@ -79,11 +80,18 @@ def process_message_async(event):
     user_message = event.get("text")
     channel_id = event.get("channel")
     thread_ts = event.get("ts")
+    attachments = event.get("files", [])
 
     if not user_message.startswith("!bot"):
         return
 
-    rag_response = rag.init(user_message)
+    rag_response = ""
+    
+    if contains_link(user_message) or len(attachments)>0:
+        #RAG can't process externals links or attachments
+        rag_response = "I cannot process links or attachments with my current capability"
+    else:
+        rag_response = rag.init(user_message)
 
     # Send the generated response back to Slack
     send_message_to_slack(channel_id, rag_response, thread_ts)
@@ -101,6 +109,10 @@ def send_message_to_slack(channel_id, message, thread_ts):
         payload["thread_ts"] = thread_ts
     requests.post(url, headers=headers, json=payload)
 
+def contains_link(s):
+    # Regular expression to match URLs
+    url_regex = r'https?://(?:[-\w.]|(?:%[\da-fA-F]{2}))+'
+    return bool(re.search(url_regex, s))
 
 if __name__ == "__main__":
     app.run(port=2323)
